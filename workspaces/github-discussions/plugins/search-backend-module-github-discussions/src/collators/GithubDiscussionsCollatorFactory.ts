@@ -24,7 +24,7 @@ import {
   createGithubGraphqlClient,
   fetchDiscussionDocuments,
 } from '@guidanti/backstage-github-discussions-fetcher';
-import { type GithubDiscussionIndexableDocument } from '@backstage-community/plugin-github-discussions-common';
+import { type GithubDiscussionIndexableDocument } from '../types';
 import {
   DefaultGithubCredentialsProvider,
   type GithubIntegration,
@@ -32,6 +32,10 @@ import {
 } from '@backstage/integration';
 import gh from 'parse-github-url';
 import { Duration } from 'luxon';
+import {
+  createPermission,
+  Permission,
+} from '@backstage/plugin-permission-common';
 
 export const DEFAULT_SCHEDULE = {
   frequency: { minutes: 45 },
@@ -84,6 +88,7 @@ export class GithubDiscussionsCollatorFactory
   private readonly discussionsBatchSize?: number;
   private readonly commentsBatchSize?: number;
   private readonly repliesBatchSize?: number;
+  public visibilityPermission: Permission;
 
   private constructor(options: GithubDiscussionsCollatorFactoryOptions) {
     this.logger = options.logger.child({ documentType: this.type });
@@ -98,6 +103,13 @@ export class GithubDiscussionsCollatorFactory
     this.repliesBatchSize = options.repliesBatchSize;
     this.org = options.org;
     this.repo = options.repo;
+    this.visibilityPermission = createPermission({
+      name: 'search.discussions.read',
+      attributes: {
+        action: 'read',
+      },
+      resourceType: 'github-discussions',
+    });
   }
 
   static async fromConfig({
